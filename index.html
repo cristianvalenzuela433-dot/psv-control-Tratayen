@@ -1,5 +1,4 @@
-function App() {
-            const [currentUser, setCurrentUser] = useState<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -69,6 +68,8 @@ function App() {
             });
             const [showAdminPanel, setShowAdminPanel] = useState(false);
             const [newUser, setNewUser] = useState({ username: '', password: '', nombre: '', role: 'operador', autorizado: false });
+            const [editingUser, setEditingUser] = useState(null);
+            const [showEditUser, setShowEditUser] = useState(false);
             const [showAddPSV, setShowAddPSV] = useState(false);
             const [newPSV, setNewPSV] = useState({ 
                 area: '', 
@@ -192,6 +193,38 @@ function App() {
                 }
             };
 
+            // Abrir modal para editar usuario
+            const openEditUser = (user) => {
+                setEditingUser({...user});
+                setShowEditUser(true);
+            };
+
+            // Guardar cambios de usuario editado
+            const handleUpdateUser = () => {
+                if (!editingUser.username || !editingUser.password || !editingUser.nombre) {
+                    alert('Complete todos los campos obligatorios');
+                    return;
+                }
+                
+                const updates = {
+                    username: editingUser.username,
+                    password: editingUser.password,
+                    nombre: editingUser.nombre,
+                    role: editingUser.role,
+                    autorizado: editingUser.autorizado
+                };
+                
+                database.ref('users/' + editingUser.id).update(updates)
+                    .then(() => {
+                        setShowEditUser(false);
+                        setEditingUser(null);
+                        alert('Usuario actualizado exitosamente');
+                    })
+                    .catch((error) => {
+                        alert('Error al actualizar: ' + error.message);
+                    });
+            };
+
             // Cambiar contraseña de usuario
             const changePassword = (userId, newPassword) => {
                 if (newPassword && newPassword.length >= 6) {
@@ -233,8 +266,7 @@ function App() {
                     alert('PSV eliminada exitosamente');
                 }
             };
-
-            // Abrir modal de edición
+                    // Abrir modal de edición
             const openEditPSV = (psv) => {
                 console.log('Abriendo modal de edición para:', psv);
                 setEditingPSV({...psv});
@@ -489,12 +521,20 @@ function App() {
                                                     </td>
                                                     <td className={`px-4 py-3`}>
                                                         {user.role !== 'admin' && (
-                                                            <button
-                                                                onClick={() => deleteUser(user.id)}
-                                                                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                                                            >
-                                                                🗑️ Eliminar
-                                                            </button>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => openEditUser(user)}
+                                                                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                                                >
+                                                                    ✏️ Editar
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => deleteUser(user.id)}
+                                                                    className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                                                                >
+                                                                    🗑️ Eliminar
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -505,8 +545,7 @@ function App() {
                             </div>
                         </div>
                     )}
-
-                    {/* Filtros y búsqueda */}
+                            {/* Filtros y búsqueda */}
                     <div className="max-w-7xl mx-auto p-6">
                         {/* Botón Agregar PSV */}
                         {(currentUser.role === 'admin' || currentUser.autorizado) && (
@@ -735,6 +774,99 @@ function App() {
                         </div>
                     </div>
 
+                    {/* Modal Editar Usuario */}
+                    {showEditUser && editingUser && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-2xl p-6 max-w-md w-full`}>
+                                <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    ✏️ Editar Usuario: {editingUser.username}
+                                </h2>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            Usuario *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editingUser.username}
+                                            onChange={(e) => setEditingUser({...editingUser, username: e.target.value})}
+                                            className={`w-full px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            Contraseña *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editingUser.password}
+                                            onChange={(e) => setEditingUser({...editingUser, password: e.target.value})}
+                                            className={`w-full px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            Nombre Completo *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editingUser.nombre}
+                                            onChange={(e) => setEditingUser({...editingUser, nombre: e.target.value})}
+                                            className={`w-full px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            Rol
+                                        </label>
+                                        <select
+                                            value={editingUser.role}
+                                            onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
+                                            className={`w-full px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                        >
+                                            <option value="operador">Operador</option>
+                                            <option value="admin">Administrador</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={editingUser.autorizado}
+                                            onChange={(e) => setEditingUser({...editingUser, autorizado: e.target.checked})}
+                                            className="w-4 h-4 mr-2"
+                                        />
+                                        <label className={`text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            Usuario autorizado para modificar PSV
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 flex gap-3 justify-end">
+                                    <button
+                                        onClick={() => {
+                                            setShowEditUser(false);
+                                            setEditingUser(null);
+                                        }}
+                                        className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                                    >
+                                        ✗ Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleUpdateUser}
+                                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+                                    >
+                                        ✓ Guardar Cambios
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Modal Editar PSV */}
                     {showEditPSV && editingPSV && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -865,4 +997,3 @@ function App() {
     </script>
 </body>
 </html>
-
