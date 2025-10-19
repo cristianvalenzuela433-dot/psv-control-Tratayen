@@ -82,6 +82,8 @@
             });
             const [showEditPSV, setShowEditPSV] = useState(false);
             const [editingPSV, setEditingPSV] = useState(null);
+            const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
+            const [duplicates, setDuplicates] = useState([]);
 
             // Guardar usuario en localStorage cuando cambia
             useEffect(() => {
@@ -235,6 +237,41 @@
                 }
             };
 
+            // Buscar PSV duplicadas
+            const findDuplicates = () => {
+                const tagCount = {};
+                const duplicateList = [];
+                
+                // Contar cuántas veces aparece cada TAG
+                psvData.forEach(psv => {
+                    const tag = psv.tag?.trim().toLowerCase();
+                    if (tag) {
+                        if (!tagCount[tag]) {
+                            tagCount[tag] = [];
+                        }
+                        tagCount[tag].push(psv);
+                    }
+                });
+                
+                // Filtrar solo los que están duplicados
+                Object.entries(tagCount).forEach(([tag, psvList]) => {
+                    if (psvList.length > 1) {
+                        duplicateList.push({
+                            tag: psvList[0].tag, // TAG original (con mayúsculas)
+                            count: psvList.length,
+                            items: psvList
+                        });
+                    }
+                });
+                
+                setDuplicates(duplicateList);
+                setShowDuplicatesModal(true);
+                
+                if (duplicateList.length === 0) {
+                    alert('✅ No se encontraron PSV duplicadas');
+                }
+            };
+
             // Agregar nueva PSV
             const handleAddPSV = () => {
                 if (!newPSV.tag || !newPSV.area) {
@@ -266,7 +303,7 @@
                     alert('PSV eliminada exitosamente');
                 }
             };
-                    // Abrir modal de edición
+            // Abrir modal de edición
             const openEditPSV = (psv) => {
                 console.log('Abriendo modal de edición para:', psv);
                 setEditingPSV({...psv});
@@ -520,7 +557,7 @@
                                                         )}
                                                     </td>
                                                     <td className={`px-4 py-3`}>
-                                                        {user.role !== 'admin' && (
+                                                        {user.role !== 'admin' ? (
                                                             <div className="flex gap-2">
                                                                 <button
                                                                     onClick={() => openEditUser(user)}
@@ -535,6 +572,13 @@
                                                                     🗑️ Eliminar
                                                                 </button>
                                                             </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => openEditUser(user)}
+                                                                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                                            >
+                                                                ✏️ Editar
+                                                            </button>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -545,16 +589,22 @@
                             </div>
                         </div>
                     )}
-                            {/* Filtros y búsqueda */}
+                    {/* Filtros y búsqueda */}
                     <div className="max-w-7xl mx-auto p-6">
-                        {/* Botón Agregar PSV */}
+                        {/* Botones superiores */}
                         {(currentUser.role === 'admin' || currentUser.autorizado) && (
-                            <div className="mb-4">
+                            <div className="mb-4 flex gap-3">
                                 <button
                                     onClick={() => setShowAddPSV(!showAddPSV)}
                                     className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
                                 >
                                     ➕ Agregar Nueva PSV
+                                </button>
+                                <button
+                                    onClick={findDuplicates}
+                                    className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-semibold"
+                                >
+                                    🔍 Buscar Duplicados
                                 </button>
                             </div>
                         )}
@@ -774,6 +824,54 @@
                         </div>
                     </div>
 
+                    {/* Modal de Duplicados */}
+                    {showDuplicatesModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto`}>
+                                <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    🔍 PSV Duplicadas - Encontradas: {duplicates.length}
+                                </h2>
+                                
+                                {duplicates.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {duplicates.map((dup, idx) => (
+                                            <div key={idx} className={`p-4 border rounded-lg ${darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'}`}>
+                                                <h3 className={`font-bold text-lg mb-2 ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                                    TAG: {dup.tag} <span className="text-sm">({dup.count} repeticiones)</span>
+                                                </h3>
+                                                <div className="space-y-2">
+                                                    {dup.items.map((item) => (
+                                                        <div key={item.id} className={`p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-white'}`}>
+                                                            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                                <strong>Área:</strong> {item.area} | 
+                                                                <strong> Equipo:</strong> {item.equipo} | 
+                                                                <strong> Ubicación:</strong> {item.ubicacion} | 
+                                                                <strong> Estado:</strong> {item.estado}
+                                                            </p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className={`text-center py-8 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        ✅ No se encontraron PSV duplicadas
+                                    </p>
+                                )}
+
+                                <div className="mt-6 flex justify-end">
+                                    <button
+                                        onClick={() => setShowDuplicatesModal(false)}
+                                        className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                                    >
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Modal Editar Usuario */}
                     {showEditUser && editingUser && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -954,7 +1052,6 @@
                                             <option value="Retirada">Retirada</option>
                                         </select>
                                     </div>
-
                                     <div className="md:col-span-2">
                                         <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                             Observaciones
