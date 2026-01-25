@@ -353,8 +353,8 @@
                 // Parsear fecha de calibración manualmente (YYYY-MM-DD) para evitar desfases UTC
                 const [year, month, day] = fechaCalibracion.split('-').map(Number);
 
-                // El vencimiento es exactamente 1 año después a la misma hora (medianoche)
-                const vencimiento = new Date(year + 1, month - 1, day);
+                // El vencimiento es exactamente la fecha ingresada
+                const vencimiento = new Date(year, month - 1, day);
                 vencimiento.setHours(0, 0, 0, 0);
 
                 const diffTime = vencimiento - hoy;
@@ -391,11 +391,10 @@
             const getProximaFecha = (fechaStr) => {
                 if (!fechaStr) return 'S/D';
                 const [year, month, day] = fechaStr.split('-').map(Number);
-                // Calculamos la fecha localmente sumando 1 año
-                const proxima = new Date(year + 1, month - 1, day);
-                const d = String(proxima.getDate()).padStart(2, '0');
-                const m = String(proxima.getMonth() + 1).padStart(2, '0');
-                const y = String(proxima.getFullYear()).slice(-2);
+                // Retornamos la fecha tal cual fue ingresada, solo formateada
+                const d = String(day).padStart(2, '0');
+                const m = String(month).padStart(2, '0');
+                const y = String(year).slice(-2);
                 return `${d}-${m}-${y}`;
             };
 
@@ -875,7 +874,7 @@
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-40 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Equipo</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-40 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Ubicación</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-28 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Set Presión</th>
-                                            <th className={`px-3 py-3 text-left text-xs font-semibold w-28 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Próxima Calib.</th>
+                                            <th className={`px-3 py-3 text-left text-xs font-semibold w-28 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Fecha Calib.</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-28 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Estado</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-36 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Próximo a Vencer</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Observaciones</th>
