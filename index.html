@@ -99,6 +99,7 @@
                 equipo: '',
                 ubicacion: '',
                 presionSet: '',
+                unidadPresion: 'PSI',
                 estado: 'Habilitada',
                 observaciones: '',
                 fechaCalibracion: ''
@@ -288,6 +289,7 @@
                     equipo: '',
                     ubicacion: '',
                     presionSet: '',
+                    unidadPresion: 'PSI',
                     estado: 'Habilitada',
                     observaciones: '',
                     fechaCalibracion: ''
@@ -326,6 +328,7 @@
                     equipo: editingPSV.equipo || '',
                     ubicacion: editingPSV.ubicacion || '',
                     presionSet: editingPSV.presionSet || '',
+                    unidadPresion: editingPSV.unidadPresion || 'PSI',
                     estado: editingPSV.estado,
                     observaciones: editingPSV.observaciones || '',
                     fechaCalibracion: editingPSV.fechaCalibracion || ''
@@ -353,8 +356,8 @@
                 // Parsear fecha de calibración manualmente (YYYY-MM-DD) para evitar desfases UTC
                 const [year, month, day] = fechaCalibracion.split('-').map(Number);
 
-                // El vencimiento es exactamente la fecha ingresada
-                const vencimiento = new Date(year, month - 1, day);
+                // El vencimiento es exactamente 1 año después
+                const vencimiento = new Date(year + 1, month - 1, day);
                 vencimiento.setHours(0, 0, 0, 0);
 
                 const diffTime = vencimiento - hoy;
@@ -391,11 +394,23 @@
             const getProximaFecha = (fechaStr) => {
                 if (!fechaStr) return 'S/D';
                 const [year, month, day] = fechaStr.split('-').map(Number);
-                // Retornamos la fecha tal cual fue ingresada, solo formateada
+                // Calculamos la fecha sumando 1 año
                 const d = String(day).padStart(2, '0');
                 const m = String(month).padStart(2, '0');
-                const y = String(year).slice(-2);
+                const y = String(year + 1); // Mostramos el año completo o corto, usemos DD-MM-YYYY para claridad
                 return `${d}-${m}-${y}`;
+            };
+
+            // Renderizar presión sin duplicar unidades
+            const renderPresion = (psv) => {
+                if (!psv.presionSet) return '---';
+                const set = String(psv.presionSet).toLowerCase();
+                // Si el texto ya tiene la unidad escrita, lo devolvemos tal cual
+                if (set.includes('psi') || set.includes('bar') || set.includes('kg/cm')) {
+                    return psv.presionSet;
+                }
+                // Si no tiene unidad, le pegamos la que tenga seleccionada (o PSI por defecto)
+                return `${psv.presionSet} ${psv.unidadPresion || 'PSI'}`;
             };
 
             // Filtrar PSV
@@ -669,44 +684,80 @@
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6 mb-6`}>
                                 <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Nueva PSV</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <select
-                                        value={newPSV.area}
-                                        onChange={(e) => setNewPSV({ ...newPSV, area: e.target.value })}
-                                        className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
-                                    >
-                                        <option value="">Seleccionar Área *</option>
-                                        {areas.map(area => (
-                                            <option key={area} value={area}>{area}</option>
-                                        ))}
-                                    </select>
-                                    <input
-                                        type="text"
-                                        placeholder="TAG *"
-                                        value={newPSV.tag}
-                                        onChange={(e) => setNewPSV({ ...newPSV, tag: e.target.value })}
-                                        className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Equipo"
-                                        value={newPSV.equipo}
-                                        onChange={(e) => setNewPSV({ ...newPSV, equipo: e.target.value })}
-                                        className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Ubicación"
-                                        value={newPSV.ubicacion}
-                                        onChange={(e) => setNewPSV({ ...newPSV, ubicacion: e.target.value })}
-                                        className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Set de Presión"
-                                        value={newPSV.presionSet}
-                                        onChange={(e) => setNewPSV({ ...newPSV, presionSet: e.target.value })}
-                                        className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
-                                    />
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Área</label>
+                                        <select
+                                            value={newPSV.area}
+                                            onChange={(e) => setNewPSV({ ...newPSV, area: e.target.value })}
+                                            className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                        >
+                                            <option value="">Seleccionar Área *</option>
+                                            {areas.map(area => (
+                                                <option key={area} value={area}>{area}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>TAG</label>
+                                        <input
+                                            type="text"
+                                            placeholder="TAG *"
+                                            value={newPSV.tag}
+                                            onChange={(e) => setNewPSV({ ...newPSV, tag: e.target.value })}
+                                            className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Equipo</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Equipo"
+                                            value={newPSV.equipo}
+                                            onChange={(e) => setNewPSV({ ...newPSV, equipo: e.target.value })}
+                                            className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Ubicación</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ubicación"
+                                            value={newPSV.ubicacion}
+                                            onChange={(e) => setNewPSV({ ...newPSV, ubicacion: e.target.value })}
+                                            className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Set de Presión</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Valor"
+                                                value={newPSV.presionSet}
+                                                onChange={(e) => setNewPSV({ ...newPSV, presionSet: e.target.value })}
+                                                className={`flex-1 px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                            />
+                                            <select
+                                                value={newPSV.unidadPresion}
+                                                onChange={(e) => {
+                                                    const nuevaUnidad = e.target.value;
+                                                    // Limpieza automática: Si el valor ya tiene unidades escritas, las quitamos
+                                                    let valorLimpio = String(newPSV.presionSet)
+                                                        .replace(/psi/gi, '')
+                                                        .replace(/bar/gi, '')
+                                                        .replace(/kg\/cm2/gi, '')
+                                                        .replace(/kg\/cm²/gi, '')
+                                                        .trim();
+                                                    setNewPSV({ ...newPSV, unidadPresion: nuevaUnidad, presionSet: valorLimpio });
+                                                }}
+                                                className={`w-24 px-2 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                            >
+                                                <option value="PSI">PSI</option>
+                                                <option value="Bar">Bar</option>
+                                                <option value="Kg/cm²">Kg/cm²</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                     <div className="flex flex-col gap-1">
                                         <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Fecha Calibración</label>
                                         <input
@@ -721,15 +772,18 @@
                                             </p>
                                         )}
                                     </div>
-                                    <select
-                                        value={newPSV.estado}
-                                        onChange={(e) => setNewPSV({ ...newPSV, estado: e.target.value })}
-                                        className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
-                                    >
-                                        <option value="Habilitada">Habilitada</option>
-                                        <option value="Bloqueada">Bloqueada</option>
-                                        <option value="Retirada">Retirada</option>
-                                    </select>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Estado</label>
+                                        <select
+                                            value={newPSV.estado}
+                                            onChange={(e) => setNewPSV({ ...newPSV, estado: e.target.value })}
+                                            className={`px-4 py-2 border rounded-lg ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white'}`}
+                                        >
+                                            <option value="Habilitada">Habilitada</option>
+                                            <option value="Bloqueada">Bloqueada</option>
+                                            <option value="Retirada">Retirada</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div className="mt-4 flex gap-3">
                                     <button onClick={handleAddPSV} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">✓ Guardar PSV</button>
@@ -874,7 +928,8 @@
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-40 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Equipo</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-40 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Ubicación</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-28 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Set Presión</th>
-                                            <th className={`px-3 py-3 text-left text-xs font-semibold w-28 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Fecha Calib.</th>
+                                            <th className={`px-3 py-3 text-left text-xs font-semibold w-24 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Última Calib.</th>
+                                            <th className={`px-3 py-3 text-left text-xs font-semibold w-24 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Vencimiento</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-28 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Estado</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold w-36 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Próximo a Vencer</th>
                                             <th className={`px-3 py-3 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Observaciones</th>
@@ -892,7 +947,8 @@
                                                     <td className={`px-3 py-2 font-mono text-xs font-bold whitespace-nowrap ${darkMode ? 'text-blue-400' : 'text-blue-600 underline'}`}>{psv.tag}</td>
                                                     <td className={`px-3 py-2 text-xs ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{psv.equipo}</td>
                                                     <td className={`px-3 py-2 text-xs ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{psv.ubicacion}</td>
-                                                    <td className={`px-3 py-2 text-xs ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{psv.presionSet}</td>
+                                                    <td className={`px-3 py-2 text-xs ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{renderPresion(psv)}</td>
+                                                    <td className={`px-3 py-2 text-xs whitespace-nowrap ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{formatearFecha(psv.fechaCalibracion)}</td>
                                                     <td className={`px-3 py-2 text-xs whitespace-nowrap font-bold ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>{getProximaFecha(psv.fechaCalibracion)}</td>
                                                     <td className="px-3 py-2">
                                                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${psv.estado === 'Habilitada' ? 'bg-green-100 text-green-800' :
@@ -990,13 +1046,49 @@
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-6 max-w-2xl w-full`}>
                                 <h2 className="text-2xl font-bold mb-4">Editar PSV: {editingPSV.tag}</h2>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <input type="text" value={editingPSV.area} onChange={e => setEditingPSV({ ...editingPSV, area: e.target.value })} className="p-2 border rounded" />
-                                    <input type="text" value={editingPSV.tag} onChange={e => setEditingPSV({ ...editingPSV, tag: e.target.value })} className="p-2 border rounded" />
-                                    <input type="text" value={editingPSV.equipo} onChange={e => setEditingPSV({ ...editingPSV, equipo: e.target.value })} className="p-2 border rounded" />
-                                    <input type="text" value={editingPSV.ubicacion} onChange={e => setEditingPSV({ ...editingPSV, ubicacion: e.target.value })} className="p-2 border rounded" />
-                                    <input type="text" value={editingPSV.presionSet} onChange={e => setEditingPSV({ ...editingPSV, presionSet: e.target.value })} className="p-2 border rounded" />
                                     <div className="flex flex-col gap-1">
-                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Fecha Calibración</label>
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Área</label>
+                                        <input type="text" value={editingPSV.area} onChange={e => setEditingPSV({ ...editingPSV, area: e.target.value })} className="p-2 border rounded" />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>TAG</label>
+                                        <input type="text" value={editingPSV.tag} onChange={e => setEditingPSV({ ...editingPSV, tag: e.target.value })} className="p-2 border rounded" />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Equipo</label>
+                                        <input type="text" value={editingPSV.equipo} onChange={e => setEditingPSV({ ...editingPSV, equipo: e.target.value })} className="p-2 border rounded" />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Ubicación</label>
+                                        <input type="text" value={editingPSV.ubicacion} onChange={e => setEditingPSV({ ...editingPSV, ubicacion: e.target.value })} className="p-2 border rounded" />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Set de Presión</label>
+                                        <div className="flex gap-2">
+                                            <input type="text" value={editingPSV.presionSet} onChange={e => setEditingPSV({ ...editingPSV, presionSet: e.target.value })} className="flex-1 p-2 border rounded" />
+                                            <select
+                                                value={editingPSV.unidadPresion || 'PSI'}
+                                                onChange={e => {
+                                                    const nuevaUnidad = e.target.value;
+                                                    // Limpieza automática para quitar unidades del campo de texto
+                                                    let valorLimpio = String(editingPSV.presionSet)
+                                                        .replace(/psi/gi, '')
+                                                        .replace(/bar/gi, '')
+                                                        .replace(/kg\/cm2/gi, '')
+                                                        .replace(/kg\/cm²/gi, '')
+                                                        .trim();
+                                                    setEditingPSV({ ...editingPSV, unidadPresion: nuevaUnidad, presionSet: valorLimpio });
+                                                }}
+                                                className="w-24 p-2 border rounded"
+                                            >
+                                                <option value="PSI">PSI</option>
+                                                <option value="Bar">Bar</option>
+                                                <option value="Kg/cm²">Kg/cm²</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Fecha Calibración</label>
                                         <input type="date" value={editingPSV.fechaCalibracion || ''} onChange={e => setEditingPSV({ ...editingPSV, fechaCalibracion: e.target.value })} className="p-2 border rounded" />
                                         {editingPSV.fechaCalibracion && (
                                             <p className="text-[10px] text-blue-500 font-bold">
@@ -1004,17 +1096,23 @@
                                             </p>
                                         )}
                                     </div>
-                                    <select value={editingPSV.estado} onChange={e => setEditingPSV({ ...editingPSV, estado: e.target.value })} className="p-2 border rounded col-span-2">
-                                        <option value="Habilitada">Habilitada</option>
-                                        <option value="Bloqueada">Bloqueada</option>
-                                        <option value="Retirada">Retirada</option>
-                                    </select>
-                                    <textarea
-                                        placeholder="Observaciones de la válvula"
-                                        value={editingPSV.observaciones || ''}
-                                        onChange={e => setEditingPSV({ ...editingPSV, observaciones: e.target.value })}
-                                        className="p-2 border rounded col-span-2 min-h-[100px]"
-                                    ></textarea>
+                                    <div className="flex flex-col gap-1 col-span-2">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Estado</label>
+                                        <select value={editingPSV.estado} onChange={e => setEditingPSV({ ...editingPSV, estado: e.target.value })} className="p-2 border rounded w-full">
+                                            <option value="Habilitada">Habilitada</option>
+                                            <option value="Bloqueada">Bloqueada</option>
+                                            <option value="Retirada">Retirada</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1 col-span-2">
+                                        <label className={`text-xs font-bold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Observaciones</label>
+                                        <textarea
+                                            placeholder="Observaciones de la válvula"
+                                            value={editingPSV.observaciones || ''}
+                                            onChange={e => setEditingPSV({ ...editingPSV, observaciones: e.target.value })}
+                                            className="p-2 border rounded min-h-[100px]"
+                                        ></textarea>
+                                    </div>
                                 </div>
                                 <div className="flex gap-2 mt-6">
                                     <button onClick={handleUpdatePSV} className="flex-1 bg-blue-600 text-white py-2 rounded">Guardar</button>
@@ -1073,7 +1171,7 @@
                                         </div>
                                         <div>
                                             <p className={`text-xs uppercase tracking-widest font-bold ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Set de Presión</p>
-                                            <p className="text-xl font-black text-indigo-600 mt-1">{selectedPSV.presionSet || '---'}</p>
+                                            <p className="text-xl font-black text-indigo-600 mt-1">{renderPresion(selectedPSV)}</p>
                                         </div>
                                         <div>
                                             <p className={`text-xs uppercase tracking-widest font-bold ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Última Calibración</p>
